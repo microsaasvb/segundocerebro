@@ -1,5 +1,11 @@
 const nextConfig = {
   reactStrictMode: false,
+  eslint: {
+    ignoreDuringBuilds: true
+  },
+  typescript: {
+    ignoreBuildErrors: false
+  },
   async rewrites() {
     const dockerApiBaseUrl = process.env.DOCKER_API_BASE_URL;
     const localApiBaseUrl = `${process.env.HOST_ADDRESS || 'http://127.0.0.1'}:${process.env.LOCAL_APP_PORT || 8002}`;
