@@ -3,14 +3,12 @@
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { GithubOutlined, FileTextOutlined } from '@ant-design/icons';
 import { ModelStatus } from '../../../components/ModelStatus';
 import { useLoadInfoStore } from '@/store/useLoadInfoStore';
 import { useEffect } from 'react';
 import { useUploadStore } from '@/store/useUploadStore';
 import { ROUTER_PATH } from '@/utils/router';
 import { EVENT } from '@/utils/event';
-import GitHubStars from '@/components/GithubStars';
 
 export function Header() {
   const pathname = usePathname();
@@ -72,36 +70,6 @@ export function Header() {
 
         {/* Right section - Navigation links */}
         <div className="flex-none flex items-center space-x-6">
-          <Link
-            className={`flex items-center space-x-1.5 text-sm ${
-              isHomePage
-                ? 'text-gray-600/90 hover:text-gray-900'
-                : 'text-gray-600 hover:text-blue-600'
-            } transition-all hover:-translate-y-0.5`}
-            href="https://secondme.io"
-            rel="noopener noreferrer"
-            target="_blank"
-            title="Learn about Second Me"
-          >
-            <div className="flex items-center space-x-1">
-              <FileTextOutlined className="text-lg" />
-              <span>Whitepaper</span>
-            </div>
-          </Link>
-          <Link
-            className={`flex items-center space-x-1.5 text-sm ${
-              isHomePage
-                ? 'text-gray-600/90 hover:text-gray-900'
-                : 'text-gray-600 hover:text-blue-600'
-            } transition-all hover:-translate-y-0.5`}
-            href="https://github.com/mindverse/Second-Me"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <div className="flex items-center space-x-1">
-              <GitHubStars />
-            </div>
-          </Link>
         </div>
       </div>
     </header>

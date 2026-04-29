@@ -7,8 +7,6 @@ import dynamic from 'next/dynamic';
 import type { ILoadInfo } from '@/service/info';
 import { getCurrentInfo, getUploadCount } from '@/service/info';
 import { ROUTER_PATH } from '@/utils/router';
-import Footer from './components/Footer';
-import SocialMedia from './components/SocialMedia';
 import { message } from 'antd';
 
 const NetworkSphere = dynamic(() => import('@/components/NetworkSphere'), {
@@ -146,12 +144,6 @@ export default function Home() {
       </div>
 
       {showCreate && <CreateSecondMe onClose={() => setShowCreate(false)} />}
-
-      {/* Quick examples section - Moved to the bottom of the page */}
-      <Footer className={contentVisible ? 'opacity-100' : 'opacity-0'} />
-
-      {/* Social Media Links - Fixed to bottom right */}
-      <SocialMedia className={contentVisible ? 'opacity-100' : 'opacity-0'} />
     </div>
   );
 }

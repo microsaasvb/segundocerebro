@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Suspense } from 'react';
+import { Analytics } from '@vercel/analytics/next';
 import HeaderLayout from '@/layouts/HeaderLayout';
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default function RootLayout({
         <Suspense>
           <HeaderLayout>{children}</HeaderLayout>
         </Suspense>
+        <Analytics />
       </body>
     </html>
   );
