@@ -3,9 +3,8 @@ import './globals.css';
 import { Suspense } from 'react';
 import { Analytics } from '@vercel/analytics/next';
 import { Space_Grotesk } from 'next/font/google';
-import { AntdRegistry } from '@ant-design/nextjs-registry';
-import { App as AntdApp, ConfigProvider } from 'antd';
 import HeaderLayout from '@/layouts/HeaderLayout';
+import { Providers } from './providers';
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -29,15 +28,11 @@ export default function RootLayout({
   return (
     <html className={`h-full ${spaceGrotesk.variable}`} lang="en">
       <body className="flex flex-col font-sans antialiased h-full">
-        <AntdRegistry>
-          <ConfigProvider theme={{ hashed: false }}>
-            <AntdApp>
-              <Suspense>
-                <HeaderLayout>{children}</HeaderLayout>
-              </Suspense>
-            </AntdApp>
-          </ConfigProvider>
-        </AntdRegistry>
+        <Providers>
+          <Suspense>
+            <HeaderLayout>{children}</HeaderLayout>
+          </Suspense>
+        </Providers>
         <Analytics />
       </body>
     </html>
