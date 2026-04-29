@@ -8,8 +8,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <AntdRegistry>
       <ConfigProvider
         theme={{
-          hashed: false,
-          cssVar: true
+          hashed: false
         }}
       >
         <AntdApp>{children}</AntdApp>
