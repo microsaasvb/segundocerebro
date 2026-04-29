@@ -20,11 +20,11 @@ export default {
         },
         secondme: {
           'warm-bg': '#FDF8F3',
-          blue: '#7A1FE0',
-          green: '#00FF94',
-          red: '#FF3DA0',
+          blue: '#4A90E2',
+          green: '#50B86B',
+          red: '#FF6B6B',
           yellow: '#FFD93D',
-          navy: '#1A0B3C',
+          navy: '#2C3E50',
           gray: {
             100: '#F7F9FA',
             200: '#E9ECEF',

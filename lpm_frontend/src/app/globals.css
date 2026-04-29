@@ -5,12 +5,12 @@
 
 :root {
   --background: #fdf8f3;
-  --foreground: #1a0b3c;
-  --primary: #7a1fe0;
-  --primary-hover: #5d18ad;
-  --accent-1: #ff3da0;
-  --accent-2: #00ff94;
-  --accent-3: #7a1fe0;
+  --foreground: #2c3e50;
+  --primary: #4a90e2;
+  --primary-hover: #357abd;
+  --accent-1: #ff6b6b;
+  --accent-2: #50b86b;
+  --accent-3: #ffd93d;
   --btn-width: 240px;
 }
 
