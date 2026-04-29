@@ -1,0 +1,21 @@
+# Frontend - deploy separado no Vercel
+lpm_frontend/
+
+# Dependência não usada pelo Dockerfile.backend
+dependencies/graphrag-modified.tar.gz
+
+# Arquivos desnecessários para o build do backend
+images/
+docs/
+integrate/
+mcp/
+scripts/
+resources/
+.claude/
+.github/
+*.md
+!README.md
+Dockerfile.frontend
+Dockerfile.backend.cuda
+Dockerfile.backend.apple
+docker-compose*.yml
