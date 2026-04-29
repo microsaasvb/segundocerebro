@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { AxiosResponse } from 'axios';
 import {
   getServiceStatus,
   getTrainProgress,
@@ -35,7 +36,7 @@ interface ModelState {
   setStatus: (status: ModelStatus) => void;
   setError: (error: boolean) => void;
   setIsTraining: (isTraining: boolean) => void;
-  fetchServiceStatus: () => Promise<CommonResponse<ServiceStatusRes>>;
+  fetchServiceStatus: () => Promise<AxiosResponse<CommonResponse<ServiceStatusRes>>>;
   setServiceStarting: (isStarting: boolean) => void;
   setServiceStopping: (isStopping: boolean) => void;
   setTrainingProgress: (progress: TrainProgress) => void;
