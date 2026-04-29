@@ -23,6 +23,12 @@
 | **Time** | Você + Claude (vibe-coding), sprints semanais |
 | **1º conector novo** | LLM History (ChatGPT/Claude/Gemini exports) |
 | **LLM strategy** | Híbrido pragmático — Haiku/GPT-4o-mini para agentes, L2 local opcional |
+| **Frontend host** | **Vercel** (mantém) |
+| **Backend compute** | **Hetzner** (mantém — llama.cpp/Whisper/LLaVA/GraphRAG/L2 training local) |
+| **DB + Auth + Storage + Realtime** | **Supabase** (Postgres + pgvector + Auth + Storage + RLS, região São Paulo) |
+| **Workflow / background jobs** | **Hatchet** (Python-native, sem cross-language) |
+| **Vector store** | **pgvector via Supabase** (substitui ChromaDB — uma DB só) |
+| **File storage** | **Supabase Storage** (substitui filesystem local para uploads do usuário) |
 
 ### 1.3 Estratégia de duas fases
 **Fase A — Validação interna (Sprints 0-15, ~16 semanas):**
@@ -71,49 +77,76 @@ Ao final da Fase A:
 ## 3. Arquitetura alvo
 
 ```
+                ┌────────────────────────────────────┐
+                │  Vercel (Next.js)                   │
+                │  meu.segundocerebro.ai              │
+                │  @supabase/auth-helpers-nextjs      │
+                └──────────────┬─────────────────────┘
+                               │ HTTPS
+                  ┌────────────┴────────────┐
+                  ↓                         ↓
+       ┌────────────────────┐      ┌─────────────────────────┐
+       │  Supabase (BR)     │      │  Hetzner CPX31           │
+       │  ──────────────    │ ←SQL→│  api.segundocerebro.ai   │
+       │  • Postgres 16     │      │  ──────────────────────  │
+       │  • pgvector        │      │  • Flask API             │
+       │  • Auth (OIDC+mag) │      │  • Hatchet workers       │
+       │  • Storage (S3)    │      │  • llama.cpp / Whisper   │
+       │  • Realtime        │      │  • LLaVA / GraphRAG      │
+       │  • RLS por tenant  │      │  • L2 training (LoRA)    │
+       │  • Vault (KEK)     │      │  • presidio (PII)        │
+       └────────────────────┘      └────────────┬────────────┘
+                                                ↑
+                                                │ orquestra
+                                    ┌───────────┴──────────┐
+                                    │  Hatchet (Python)     │
+                                    │  schedules/retries/   │
+                                    │  fan-out/lineage      │
+                                    └───────────────────────┘
+
+Camadas funcionais:
 ┌──────────────────────────────────────────────────────────────────────┐
-│  CAMADA 7 — Operator UI (Web Next.js — já existe, evolui)            │
-├──────────────────────────────────────────────────────────────────────┤
-│  CAMADA 6 — Proactive Agents (Daily Briefing, Pre-meeting, Pattern)  │
-├──────────────────────────────────────────────────────────────────────┤
-│  CAMADA 5 — LPM/L2 (Qwen2.5 fine-tuned por tenant — opcional)        │
-├──────────────────────────────────────────────────────────────────────┤
-│  CAMADA 4 — L1 Knowledge Graph (GraphRAG, entity resolution)         │
-├──────────────────────────────────────────────────────────────────────┤
-│  CAMADA 3 — L0 Raw Storage (Postgres + pgvector + ChromaDB           │
-│             tenant-isolated)                                          │
-├──────────────────────────────────────────────────────────────────────┤
-│  CAMADA 2 — Privacy & Consent (PII redaction, retention, erasure)    │
-├──────────────────────────────────────────────────────────────────────┤
-│  CAMADA 1 — Connector Hub (LLM history, Gmail, Calendar, Drive,      │
-│             BeeMeet, WhatsApp, Twilio)                                │
-├──────────────────────────────────────────────────────────────────────┤
-│  CAMADA 0 — Auth (OIDC + magic-link) + Tenant resolver               │
+│  7 — Operator UI                                                      │
+│  6 — Proactive Agents (Daily Briefing, Pre-meeting, Pattern, ...)    │
+│  5 — LPM/L2 (fine-tuned por tenant — opcional)                       │
+│  4 — L1 Knowledge Graph (GraphRAG, entity resolution)                │
+│  3 — L0 Raw Storage (Postgres+pgvector tenant-isolated, RLS)         │
+│  2 — Privacy & Consent (PII redaction, retention, erasure)           │
+│  1 — Connector Hub                                                    │
+│  0 — Auth (Supabase) + Tenant resolver                                │
 └──────────────────────────────────────────────────────────────────────┘
 
-Cross-cutting: Audit Trail | Sentry/OTel | Celery + Redis
+Cross-cutting: Audit Trail (Postgres) | Sentry/OTel | Hatchet
+Externos: Cloudflare, Resend (email), LiteLLM router → Anthropic/OpenAI/Ollama
 ```
 
 ### 3.1 Mudanças estruturais imediatas
-- **DB:** SQLite → **Postgres 16 + pgvector** (manter SQLite como modo dev).
-- **Background jobs:** sem queue → **Celery + Redis** (worker dedicado por tipo).
-- **Auth:** zero → **Authlib + OIDC + magic-link**. Funciona para interno (allowlist) E externo (Fase B).
+- **DB:** SQLite local → **Supabase Postgres + pgvector** (região São Paulo). SQLite mantido apenas como modo dev local.
+- **Vector store:** ChromaDB local → **pgvector na mesma Supabase**. Uma DB só, menos ops, backup automático.
+- **File storage de usuário:** filesystem `/app/data/uploads/` → **Supabase Storage** (S3-compatible, signed URLs, CDN).
+- **Modelos LLM e checkpoints L2:** continuam no Hetzner (4-8GB cada — caro/lento via Storage).
+- **Auth:** zero → **Supabase Auth** (OIDC Google/GitHub + magic-link prontos; RLS nativo por `tenant_id`).
+- **Background jobs:** sem queue → **Hatchet** (Python-native; durable execution, retries, schedules, fan-out, lineage). Self-host inicial em Hetzner ou Hatchet Cloud free tier.
 - **Connector Hub:** novo módulo `lpm_kernel/connectors/` com `BaseConnector`, registry.
 - **i18n:** `flask-babel` (backend) + `next-intl` (frontend); `language` em todo evento L0.
-- **Audit:** `lpm_kernel/audit/` — append-only log Postgres.
-- **KEK por tenant** (envelope encryption simples): chave gerada na criação do tenant, persistida em variável de ambiente cifrada (Fase A) → Hetzner Cloud Vault ou AWS KMS (Fase B).
+- **Audit:** `lpm_kernel/audit/` — append-only log no Postgres do Supabase, partitioned by month.
+- **KEK por tenant** (envelope encryption): chave gerada na criação, persistida em **Supabase Vault** (Fase A) → KMS empresarial (Fase B).
 
 ### 3.2 Files críticos a modificar
 | Arquivo | Mudança |
 |---|---|
 | [lpm_kernel/api/domains/loads/load_service.py:67](lpm_kernel/api/domains/loads/load_service.py) | Remover "only one load record"; `tenant_id` em queries |
-| [lpm_kernel/common/repository/database_session.py](lpm_kernel/common/repository/database_session.py) | Postgres + pool |
-| [docker/sqlite/init.sql](docker/sqlite/init.sql) | Reescrito como Alembic migrations; toda tabela ganha `tenant_id` |
-| [lpm_kernel/api/services/embedding_service.py](lpm_kernel/api/services/embedding_service.py) | ChromaDB collection `f"docs_{tenant_id}"` |
-| [lpm_kernel/L1/l1_generator.py](lpm_kernel/L1/l1_generator.py) | Aceitar `tenant_id`; output isolado |
-| [lpm_kernel/L2/train_for_user.sh](lpm_kernel/L2/train_for_user.sh) | Aceitar `--tenant-id`; output `/app/resources/{tenant_id}/model/output/` |
-| [lpm_kernel/api/__init__.py](lpm_kernel/api/__init__.py) | Middleware de auth + tenant resolver + audit logger |
-| [lpm_frontend/src/utils/request.ts](lpm_frontend/src/utils/request.ts) | Injetar JWT; tela de login |
+| [lpm_kernel/common/repository/database_session.py](lpm_kernel/common/repository/database_session.py) | Supabase Postgres + `pgbouncer` connection pool |
+| [docker/sqlite/init.sql](docker/sqlite/init.sql) | Reescrito como Alembic migrations + Supabase RLS policies por tabela |
+| [lpm_kernel/api/services/embedding_service.py](lpm_kernel/api/services/embedding_service.py) | ChromaDB → **pgvector**; `search_similar` reescrito como SQL `<=>` query |
+| [lpm_kernel/api/file_server/handler.py](lpm_kernel/api/file_server/handler.py) | Filesystem local → **Supabase Storage SDK** (upload/download/signed URLs) |
+| [lpm_kernel/L1/l1_generator.py](lpm_kernel/L1/l1_generator.py) | Aceitar `tenant_id`; output isolado; tasks via Hatchet workflows |
+| [lpm_kernel/L2/train_for_user.sh](lpm_kernel/L2/train_for_user.sh) | Aceitar `--tenant-id`; output `/app/resources/{tenant_id}/model/output/` (fica no Hetzner) |
+| [lpm_kernel/api/__init__.py](lpm_kernel/api/__init__.py) | Middleware Supabase JWT verifier + tenant resolver + audit logger |
+| [lpm_frontend/src/utils/request.ts](lpm_frontend/src/utils/request.ts) | Substituir auth manual por `@supabase/auth-helpers-nextjs` + injetar JWT |
+| **Novo** `lpm_kernel/jobs/` | Hatchet workflows (ingestão, indexing, agents, training) |
+| **Novo** `lpm_kernel/storage/` | Wrapper Supabase Storage |
+| **Novo** `lpm_kernel/auth/supabase.py` | Verificação de JWT do Supabase, resolução de tenant |
 
 ---
 
@@ -125,41 +158,49 @@ Cross-cutting: Audit Trail | Sentry/OTel | Celery + Redis
 **Objetivo:** estancar dívida técnica antes de adicionar features.
 - Branch `third-brain` no repo.
 - GitHub Actions CI: lint (ruff + ESLint) + pytest + build Docker.
-- Postgres 16 + pgvector via docker-compose.
-- Alembic configurado; primeira migration espelha schema atual + adiciona `tenants` + `users` tables.
-- Redis 7 + Celery skeleton; task `health_check` rodando.
-- Pytest configurado: `tests/unit/`, `tests/integration/`, `tests/e2e/`.
+- **Provisionar projeto Supabase** (região São Paulo): habilitar `pgvector` extension, criar bucket `uploads`, configurar Auth providers (Google OIDC + magic-link).
+- Alembic configurado contra Supabase Postgres; primeira migration espelha schema atual + adiciona `tenants` + `tenant_users` tables (`users` vem da `auth.users` do Supabase).
+- **Hatchet** instalado (Hatchet Cloud free tier ou self-host em container Hetzner). Worker skeleton + task `health_check` rodando.
+- Migrar bucket lógico de uploads para Supabase Storage (paridade com filesystem atual).
+- Pytest configurado: `tests/unit/`, `tests/integration/`, `tests/e2e/`. Coverage gate em 50%.
 - Sentry (backend + frontend) + OpenTelemetry traces.
 - Pre-commit hooks (`ruff`, `mypy` em `lpm_kernel/api/`).
-- **Verificação:** staging.segundocerebro.ai sobe Postgres + Celery sem regressão.
+- **Verificação:** staging.segundocerebro.ai conecta no Supabase, Hatchet worker healthy, sem regressão funcional.
 
 ### Sprint 1 — Auth + tenant foundation (semana 2) — *Epic Multi-Tenant*
-- Tabelas `tenants`, `users`, `tenant_users` (RBAC: owner/admin/member/viewer).
-- Authlib + Google OIDC + magic-link via Resend.
-- JWT com claims `tenant_id`, `user_id`, `roles`. Refresh via cookie httpOnly.
-- Middleware Flask `@require_tenant` → injeta `g.tenant_id`, `g.user_id`.
-- Frontend: tela de login, tenant switcher (se user pertence a múltiplos), persistência.
-- **Allowlist em env var** (`ALLOWED_EMAILS=mauricio@...,joao@...`) — sem signup público na Fase A.
-- Provisionamento de tenant: comando admin `python -m lpm_kernel.admin create_tenant --owner-email=...` (Fase A) → endpoint público (Fase B).
-- Testes: middleware (token válido/inválido/expirado/cross-tenant) + Playwright e2e do login.
+- **Supabase Auth** ativo: Google OIDC + magic-link (configurado no painel Supabase, sem código de auth próprio).
+- Tabela `tenants` (id, slug, display_name, region, kek_id, plan, status).
+- Tabela `tenant_users` (tenant_id, user_id, role) — `user_id` referencia `auth.users.id` do Supabase.
+- **JWT do Supabase** carrega claim customizada `tenant_id` (via Supabase Hook `custom_access_token_hook`). Backend só verifica assinatura.
+- Middleware Flask `@require_tenant`: valida JWT do Supabase via JWKS, injeta `g.tenant_id`, `g.user_id`, `g.role`.
+- Frontend: `@supabase/auth-helpers-nextjs` substitui auth manual; tela de login + tenant switcher se user pertence a múltiplos.
+- **Allowlist na Supabase** (`auth.users` + RLS) — sem signup público na Fase A. Convite via comando admin `python -m lpm_kernel.admin invite_user --email=... --tenant-slug=...` que chama `supabase.auth.admin.invite_user_by_email()`.
+- Testes: middleware (JWT válido/expirado/inválido/cross-tenant) + Playwright e2e do login com Supabase test client.
 
-### Sprint 2 — Tenant data isolation (semana 3) — *Epic Multi-Tenant*
-- Migration: `tenant_id UUID NOT NULL` em `documents`, `chunks`, `l1_*`, `memories`, `roles`, `user_llm_configs`, `loads`, `spaces`.
-- Backfill: tudo existente vira do seu tenant default.
-- SQLAlchemy: query mixin que injeta `WHERE tenant_id = :tenant_id` em todo SELECT.
-- Postgres RLS (Row-Level Security) opcional como segunda camada de defesa.
+### Sprint 2 — Tenant data isolation + ChromaDB→pgvector (semana 3) — *Epic Multi-Tenant*
+- Migration: `tenant_id UUID NOT NULL REFERENCES tenants(id)` em `documents`, `chunks`, `l1_*`, `memories`, `roles`, `user_llm_configs`, `loads`, `spaces`.
+- **Supabase RLS policies por tabela** como camada primária de isolamento (`USING (tenant_id = (auth.jwt()->>'tenant_id')::uuid)`).
+- SQLAlchemy: query mixin como camada secundária (defense-in-depth).
+- Backfill: tudo existente vira do tenant default (`docsales`).
 - Remover hardcode "only one load record" em [load_service.py:67](lpm_kernel/api/domains/loads/load_service.py).
-- ChromaDB: `get_collection_for_tenant(tenant_id, kind)` → `chunks_{tenant_id}`.
-- Filesystem: `{base}/{tenant_id}/raw_content/`, `{base}/{tenant_id}/model/output/`.
-- KEK por tenant: gerada na criação, usada para cifrar campos sensíveis (`config_encrypted` em `connectors`).
-- **Teste de isolamento:** 3 tenants, popular cada, validar zero cross-tenant leak em 50 endpoints.
-- Audit: cada query loga `(tenant_id, user_id, action, resource, ts)`.
+- **Migração ChromaDB → pgvector**:
+  - Adicionar coluna `embedding vector(1536)` (ou dimensão do modelo) em `chunks`.
+  - Script 1-shot que lê ChromaDB, insere embeddings em pgvector, valida contagem.
+  - Reescrever `embedding_service.search_similar()` para SQL `ORDER BY embedding <=> :query LIMIT k`.
+  - Index HNSW: `CREATE INDEX ON chunks USING hnsw (embedding vector_cosine_ops)`.
+  - Desligar ChromaDB depois de validar paridade de resultados.
+- **Migração filesystem → Supabase Storage** (uploads de usuário; modelos LLM ficam no Hetzner).
+  - Bucket `uploads` com path `{tenant_id}/{document_id}/{filename}`.
+  - RLS policy: user só lê/escreve seu próprio tenant.
+- KEK por tenant: gerada na criação, persistida em **Supabase Vault**, usada para cifrar `connectors.config_encrypted`.
+- **Teste de isolamento:** 3 tenants, popular cada, validar zero cross-tenant leak em 50 endpoints + bypass tentativo via JWT manipulado.
+- Audit: cada query/mutação loga `(tenant_id, user_id, action, resource, ts)`.
 
 ### Sprint 3 — Connector Hub + LLM History (semana 4) — **Quick win #1**
 - Módulo `lpm_kernel/connectors/base.py` com `BaseConnector` ABC + `CanonicalEvent` Pydantic model.
 - Registry pattern + auto-discovery.
 - Tabela `connectors` (id, tenant_id, type, status, config_encrypted, last_sync_at, error_count).
-- Celery tasks padrão: `connector.backfill`, `connector.process_event`.
+- Hatchet workflows padrão: `connector.backfill`, `connector.process_event`.
 - **Conector LLM History v1:**
   - `ChatGPTHistoryConnector`: parser do export ZIP (`conversations.json`).
   - `ClaudeHistoryConnector`: parser do export oficial (`conversations.json`).
@@ -173,7 +214,7 @@ Cross-cutting: Audit Trail | Sentry/OTel | Celery + Redis
 - PII redactor: `presidio` (Microsoft) com analyzers PT-BR + EN. Detecta CPF, RG, cartão, telefone, email, chaves API. Substitui por tokens `<PII:CPF:hash>`.
 - Pipeline L0 → L1 passa por redactor.
 - Endpoint `DELETE /api/privacy/erase?subject=<email|phone>` purga cross-tabela + marca L2 retraining.
-- Retention enforcer: Celery beat nightly purge expirados.
+- Retention enforcer: Hatchet schedule nightly purge expirados.
 - DSAR export: ZIP com tudo de um identificador.
 - Testes: evento com CPF → L1 contém token; erasure → cross-tabela limpa.
 
@@ -187,7 +228,7 @@ Cross-cutting: Audit Trail | Sentry/OTel | Celery + Redis
 - **Verificação:** conecte sua conta. Daily briefing começa a fazer sentido.
 
 ### Sprint 6 — Daily Briefing Agent (semana 7) — **Quick win #3**
-- `DailyBriefingAgent`: Celery beat 06:00 local do tenant. Query L1 últimas 24h → LLM (Haiku/4o-mini) → push notification + email (Resend).
+- `DailyBriefingAgent`: Hatchet schedule (cron `0 6 * * *` no timezone do tenant). Query L1 últimas 24h → LLM (Haiku/4o-mini) → push notification + email (Resend).
 - Tabela `agent_runs` (audit): `agent_name, tenant_id, started_at, finished_at, status, output, tokens_consumed, cost_usd`.
 - UI: feed de "insights" no dashboard.
 - **Verificação:** receba seu primeiro briefing PT-BR às 06:00.
@@ -207,7 +248,7 @@ Cross-cutting: Audit Trail | Sentry/OTel | Celery + Redis
 
 ### Sprint 9 — WhatsApp via Evolution API (semana 10)
 - Deploy próprio do Evolution API em VPS pequeno separado.
-- `WhatsAppConnector`: webhook receiver + Celery `process_event`.
+- `WhatsAppConnector`: webhook receiver + Hatchet workflow `process_event`.
 - Backfill via export ZIP (chat-by-chat).
 - Mídia: áudio → Whisper, imagem → LLaVA via Ollama, PDF → pdfplumber.
 - Detecção de idioma por mensagem.
@@ -360,10 +401,11 @@ CREATE TABLE tenant_users (
 ```
 
 ### 6.3 Padrões obrigatórios
-- Toda query SELECT em tabela de domínio: filtra por `tenant_id` (mixin de repositório).
-- Toda Celery task recebe `tenant_id` como primeiro argumento.
+- **Camada primária**: Supabase RLS policies em toda tabela de domínio.
+- **Camada secundária**: SQLAlchemy mixin que injeta `WHERE tenant_id = :tenant_id` (defense-in-depth).
+- Toda Hatchet task recebe `tenant_id` como primeiro argumento do payload.
 - Toda inserção: `tenant_id = g.tenant_id` injetado pelo middleware.
-- Cross-tenant query: APENAS via endpoint admin `super_admin`, com auditoria reforçada.
+- Cross-tenant query: APENAS via endpoint admin `super_admin` usando service-role JWT, com auditoria reforçada.
 
 ### 6.4 Critério de aceitação
 **Teste de penetração:** crie tenant A com 100 docs, tenant B com 0 docs. Login como B, executa 50 queries variadas (search, list, agent). **Zero docs de A retornados** em qualquer endpoint. Repete teste após cada sprint.
@@ -460,7 +502,7 @@ Postergados (Fase B):
 | **PII em LLM externa** | Pré-processador substitui PII por tokens antes de enviar; pós-processador re-injeta na resposta para o operador |
 | **Training set sem PII de terceiros** | Job de geração L2 filtra eventos `consent_level in ('ambient','third_party')` salvo whitelist |
 | **Voz sem speaker identificado** | Auto-anonimização antes de L1 |
-| **Limite de retenção** | Celery beat nightly purge eventos expirados |
+| **Limite de retenção** | Hatchet schedule nightly purge eventos expirados |
 | **Rate limit por tenant** | Evita custo descontrolado |
 
 ### 9.3 Critério de aceitação Fase A
@@ -504,18 +546,18 @@ ip | user_agent | request_id | tokens_used | cost_usd
 | Tipo | Cobertura alvo | Ferramenta | Quando |
 |---|---|---|---|
 | **Unit** | 70% nos services + repositories | pytest + pytest-mock | Pre-commit + CI |
-| **Integration** | Fluxos por domínio | pytest + testcontainers (Postgres + Redis) | CI |
+| **Integration** | Fluxos por domínio | pytest + Supabase local (`supabase start`) | CI |
 | **Contract (connectors)** | 100% dos `BaseConnector` filhos | pytest fixtures de payload | CI |
-| **Tenant Isolation** | Cross-tenant access checks | Custom suite executada após cada migration | CI |
-| **E2E** | Top 10 jornadas | Playwright | CI nightly + pre-release |
+| **Tenant Isolation** | Cross-tenant access checks (RLS + mixin) | Custom suite executada após cada migration | CI |
+| **E2E** | Top 10 jornadas | Playwright + Supabase test client | CI nightly + pre-release |
 | **Eval (LLM/RAG)** | Recall@k por idioma, hallucination | promptfoo ou ragas | CI nightly |
-| **Security** | OWASP top 10 + isolation | bandit, safety, custom pytest | CI weekly |
+| **Security** | OWASP top 10 + RLS bypass tentativas | bandit, safety, custom pytest | CI weekly |
 
 ### 11.2 Coverage gate
 Sprint 0: 50%. Sobe 5pp/sprint até 70% global, 85% em `lpm_kernel/api/services/` e `lpm_kernel/connectors/`.
 
 ### 11.3 Test data
-Fixtures sintéticas via Faker; **dados reais nunca no repo**. Para E2E: tenant `test_tenant` populado por seed Celery task.
+Fixtures sintéticas via Faker; **dados reais nunca no repo**. Para E2E: tenant `test_tenant` populado por seed Hatchet workflow no setup.
 
 ---
 
@@ -523,20 +565,46 @@ Fixtures sintéticas via Faker; **dados reais nunca no repo**. Para E2E: tenant 
 
 | Categoria | Escolha | Justificativa |
 |---|---|---|
-| DB | Postgres 16 + pgvector | SQLite não escala multi-tenant |
-| Queue | Celery + Redis | Padrão Python; observabilidade fácil |
-| Auth | Authlib + Google OIDC + Resend (magic-link) | Funciona interno (allowlist) E público (Fase B) |
-| Migrations | Alembic | Padrão SQLAlchemy |
-| PII | presidio (Microsoft) | Multi-idioma; recognizers PT-BR adicionáveis |
-| LLM router | LiteLLM | Swap Anthropic/OpenAI/Ollama trivial |
-| Embedding | BGE-M3 | Multilingual; bom em PT/EN cross-lingual |
-| ASR | Whisper large-v3 | PT excelente; suporte detecção idioma per chunk |
-| Diarização | pyannote | Open source; precisão decente |
-| Observabilidade | Sentry + OTel + Grafana + Prometheus | OSS estabelecido |
-| Testes | pytest + Playwright + testcontainers + promptfoo | Padrão moderno |
-| Frontend i18n | next-intl | Padrão App Router |
-| Backend i18n | flask-babel | Padrão Flask |
-| Billing (Fase B) | Stripe | Standard SaaS |
+| **Frontend host** | Vercel | Já em produção; Next.js nativo |
+| **Backend compute** | Hetzner CPX31 (escalável) | llama.cpp/Whisper/LLaVA/GraphRAG/L2 training local |
+| **DB + Auth + Storage** | Supabase (região São Paulo) | Postgres + pgvector + Auth + Storage + RLS + Vault em um lugar; LGPD-friendly |
+| **Vector store** | pgvector (no Supabase) | Substitui ChromaDB; uma DB só |
+| **Storage de upload** | Supabase Storage | S3-compatible, signed URLs, CDN, RLS por tenant |
+| **Queue / orquestração** | **Hatchet** (Python-native) | Durable execution, retries, schedules, fan-out, lineage. Sem cross-language |
+| **Auth** | Supabase Auth (Google OIDC + magic-link) | Pronto, RLS nativo, JWT JWKS |
+| **Email transacional** | Resend | Magic-link templates customizáveis |
+| **Migrations** | Alembic | Padrão SQLAlchemy |
+| **PII** | presidio (Microsoft) | Multi-idioma; recognizers PT-BR adicionáveis |
+| **LLM router** | LiteLLM | Swap Anthropic/OpenAI/Ollama/llama.cpp trivial |
+| **Embedding** | BGE-M3 (local) ou OpenAI text-embedding-3-large | Multilingual PT/EN cross-lingual |
+| **ASR** | Whisper large-v3 (local) | PT excelente; detecção de idioma per chunk |
+| **Diarização** | pyannote | Open source; precisão decente |
+| **CDN + DNS + WAF** | Cloudflare | Já configurado |
+| **Observabilidade** | Sentry + OpenTelemetry + Hatchet UI + Supabase logs | OSS + nativo de cada stack |
+| **Métricas custom** | Grafana + Prometheus (opcional, sob demanda) | Quando dashboards Hatchet/Supabase não bastarem |
+| **Testes** | pytest + Playwright + Supabase local + promptfoo | Padrão moderno |
+| **Frontend i18n** | next-intl | Padrão App Router |
+| **Backend i18n** | flask-babel | Padrão Flask |
+| **Secrets** | Supabase Vault (Fase A) → AWS Secrets Manager (Fase B) | KEK por tenant + creds de connectors |
+| **Billing (Fase B)** | Stripe | Standard SaaS |
+
+### 12.1 Custos estimados Fase A (interna, ~5 tenants)
+| Item | Custo/mês |
+|---|---|
+| Hetzner CPX31 (4 vCPU, 8GB) | ~€10 |
+| Supabase Pro (8GB DB, 100GB Storage incluso) | $25 |
+| Vercel Pro (já tem) | já pago |
+| Hatchet Cloud free tier (até 1000 runs/mês) ou self-host | $0 |
+| Resend (até 3000 emails/mês) | $0 |
+| Cloudflare | $0 |
+| LLM API (Haiku/4o-mini, ~5 users moderados) | ~$30-80 |
+| **Total estimado** | **~$80-130/mês** |
+
+### 12.2 Custos extras Fase B (launch público)
+- Stripe: 2.9% + $0.30 por transação.
+- Hatchet Cloud paid (~$30/mês) ou cluster maior se self-host.
+- Supabase Team plan ($599/mês) se ultrapassar limites Pro.
+- SOC2 (Vanta/Drata): $5-15k/ano.
 
 ---
 
@@ -602,7 +670,7 @@ Fixtures sintéticas via Faker; **dados reais nunca no repo**. Para E2E: tenant 
 
 1. **Sprint 0 começa esta semana.**
 2. Criar branch `third-brain` no repo.
-3. Setup Postgres + Redis + Celery em staging.
+3. Provisionar Supabase (BR) + Hatchet (Cloud free tier) + conexão do Hetzner.
 4. CI GitHub Actions configurado.
 5. Demo interna toda sexta-feira.
 6. Revisão de roadmap a cada 4 sprints.
