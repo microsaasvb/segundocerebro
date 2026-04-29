@@ -59,7 +59,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-brand-deep">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+      {/* Dark page backdrop - sits behind the animated network sphere */}
+      <div className="fixed inset-0 -z-20 bg-brand-deep" />
+
       {/* Network sphere background */}
       <NetworkSphere onInitialized={handleSphereInitialized} />
 
