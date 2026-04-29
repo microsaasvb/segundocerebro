@@ -5,6 +5,7 @@
     "dockerfilePath": "Dockerfile.backend"
   },
   "deploy": {
+    "startCommand": "bash -c 'set -e; mkdir -p /app/data/sqlite /app/data/chroma_db /app/logs; if [ ! -s /app/data/sqlite/lpm.db ]; then echo \"[init] creating SQLite db\"; sqlite3 /app/data/sqlite/lpm.db \".read /app/docker/sqlite/init.sql\"; fi; if [ ! -d /app/data/chroma_db/documents ] || [ ! -d /app/data/chroma_db/document_chunks ]; then echo \"[init] initializing ChromaDB\"; python /app/docker/app/init_chroma.py; fi; echo \"[start] launching flask on port ${PORT:-8002}\"; cd /app && exec python -m flask run --host=0.0.0.0 --port=${PORT:-8002}'",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }
