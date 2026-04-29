@@ -48,10 +48,10 @@ const ModelConfigModal = (props: IProps) => {
     return (
       <div className="flex flex-col items-center">
         <Image
-          alt="SecondMe Logo"
+          alt="Segundo Cerebro Logo"
           className="object-contain"
           height={40}
-          src="/images/single_logo.png"
+          src="/images/icone-claro.png"
           width={120}
         />
         <div className="text-gray-500 text-[18px] leading-[32px]">

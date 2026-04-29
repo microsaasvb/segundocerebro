@@ -13,7 +13,10 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: 'Segundo Cerebro',
-  description: 'Crie e treine seu segundo cérebro'
+  description: 'Crie e treine seu segundo cérebro',
+  icons: {
+    icon: '/favicon.png'
+  }
 };
 
 export default function RootLayout({

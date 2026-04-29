@@ -84,7 +84,7 @@ export default function Home() {
             <img
               alt="Segundo Cerebro Logo"
               className="h-20 md:h-28 mr-5"
-              src="/images/single_logo.png"
+              src="/images/icone-escuro.png"
             />
             <span
               className="text-white inline-block tracking-tight"

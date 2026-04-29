@@ -54,10 +54,10 @@ export function Header() {
         <div className="flex-none">
           <Link className="flex items-center space-x-2" href="/">
             <Image
-              alt="SecondMe Logo"
+              alt="Segundo Cerebro Logo"
               className="object-contain"
               height={40}
-              src="/images/logo.png"
+              src={isHomePage ? '/images/logo-escuro.png' : '/images/logo-claro.png'}
               width={160}
             />
           </Link>
