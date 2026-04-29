@@ -1,0 +1,23 @@
+[
+  {
+    "header": "Gemini Apps",
+    "title": "Asked Gemini: Quais são os melhores embeddings multilingual?",
+    "titleUrl": "https://gemini.google.com/app/abc123",
+    "time": "2026-04-29T13:21:11.117Z",
+    "products": ["Gemini Apps"]
+  },
+  {
+    "header": "Gemini Apps",
+    "title": "BGE-M3 e Cohere embed-multilingual-v3 são bons candidatos.",
+    "titleUrl": "https://gemini.google.com/app/abc123",
+    "time": "2026-04-29T13:21:25.000Z",
+    "products": ["Gemini Apps"]
+  },
+  {
+    "header": "Gemini Apps",
+    "title": "Asked Gemini: <a href=\"#\">como inverter dict?</a>",
+    "titleUrl": "https://gemini.google.com/app/xyz789",
+    "time": "2026-04-30T09:00:00.000Z",
+    "products": ["Gemini Apps"]
+  }
+]

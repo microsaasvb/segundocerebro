@@ -1,0 +1,58 @@
+[
+  {
+    "id": "conv-001",
+    "conversation_id": "conv-001",
+    "title": "Brainstorming Third Brain",
+    "create_time": 1714402800.0,
+    "current_node": "node-3",
+    "mapping": {
+      "node-0": {
+        "id": "node-0",
+        "message": null,
+        "parent": null,
+        "children": ["node-1"]
+      },
+      "node-1": {
+        "id": "node-1",
+        "message": {
+          "id": "msg-1",
+          "author": {"role": "system"},
+          "content": {"content_type": "text", "parts": ["You are helpful."]},
+          "create_time": 1714402800.0
+        },
+        "parent": "node-0",
+        "children": ["node-2"]
+      },
+      "node-2": {
+        "id": "node-2",
+        "message": {
+          "id": "msg-2",
+          "author": {"role": "user"},
+          "content": {"content_type": "text", "parts": ["Como devo arquitetar o Third Brain?"]},
+          "create_time": 1714402805.0
+        },
+        "parent": "node-1",
+        "children": ["node-3"]
+      },
+      "node-3": {
+        "id": "node-3",
+        "message": {
+          "id": "msg-3",
+          "author": {"role": "assistant"},
+          "content": {"content_type": "text", "parts": ["Comece pelos conectores. LLM History primeiro."]},
+          "create_time": 1714402810.0,
+          "metadata": {"model_slug": "gpt-4o"}
+        },
+        "parent": "node-2",
+        "children": []
+      }
+    }
+  },
+  {
+    "id": "conv-002",
+    "conversation_id": "conv-002",
+    "title": "Empty conversation",
+    "create_time": 1714403000.0,
+    "mapping": {}
+  }
+]
