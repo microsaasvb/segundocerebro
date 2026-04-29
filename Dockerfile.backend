@@ -47,7 +47,9 @@ RUN mkdir -p /app/data && \
 COPY pyproject.toml README.md /app/
 
 RUN poetry install --no-interaction --no-root
-RUN pip install --force-reinstall dependencies/graphrag-1.2.1.dev27.tar.gz
+RUN cd /tmp && unzip -q /app/dependencies/graphrag-1.2.1.dev27.tar.gz -d graphrag_src \
+    && pip install --force-reinstall /tmp/graphrag_src/graphrag \
+    && rm -rf /tmp/graphrag_src
 
 
 # Copy source code - Files that frequently change
