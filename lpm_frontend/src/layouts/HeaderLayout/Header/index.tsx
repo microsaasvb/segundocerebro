@@ -12,7 +12,7 @@ import { EVENT } from '@/utils/event';
 
 export function Header() {
   const pathname = usePathname();
-  const isHomePage = pathname === ROUTER_PATH.HOME;
+  const isHomePage = pathname === ROUTER_PATH.HOME || pathname === '/home';
   const isWhitelistPage = pathname.startsWith(ROUTER_PATH.STANDALONE);
   const fetchLoadInfo = useLoadInfoStore((state) => state.fetchLoadInfo);
   const fetchUploadList = useUploadStore((state) => state.fetchUploadList);
