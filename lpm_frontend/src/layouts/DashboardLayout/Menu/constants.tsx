@@ -84,5 +84,17 @@ export const tabs = [
         icon: <ChatBubbleIcon className="w-4 h-4" />
       }
     ]
+  },
+  {
+    name: 'Connectors',
+    path: ROUTER_PATH.CONNECTORS,
+    icon: <UploadIcon className="w-5 h-5" />,
+    subTabs: [
+      {
+        name: 'LLM History',
+        path: ROUTER_PATH.CONNECTORS_LLM_HISTORY,
+        icon: <ChatIcon className="w-4 h-4" />
+      }
+    ]
   }
 ];

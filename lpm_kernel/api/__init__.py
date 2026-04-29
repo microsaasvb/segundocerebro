@@ -11,10 +11,11 @@ from .domains.upload.routes import upload_bp
 from .domains.kernel2.routes_talk import talk_bp
 from .domains.user_llm_config.routes import user_llm_config_bp
 from .domains.space.space_routes import space_bp
+from .domains.connectors.routes import connectors_bp
 
 def init_routes(app: Flask):
     """Initialize all route blueprints"""
-    
+
     app.register_blueprint(health_bp)
     app.register_blueprint(document_bp)
     app.register_blueprint(kernel_bp)
@@ -27,6 +28,7 @@ def init_routes(app: Flask):
     app.register_blueprint(space_bp)
     app.register_blueprint(talk_bp)
     app.register_blueprint(user_llm_config_bp)
+    app.register_blueprint(connectors_bp)
     app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     # Disable response buffering

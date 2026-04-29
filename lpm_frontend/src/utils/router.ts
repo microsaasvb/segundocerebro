@@ -20,6 +20,9 @@ export enum ROUTER_PATH {
   APPLICATIONS_INTEGRATIONS = '/dashboard/applications/integrations',
   APPLICATIONS_API_MCP = '/dashboard/applications/api-mcp',
 
+  CONNECTORS = '/dashboard/connectors',
+  CONNECTORS_LLM_HISTORY = '/dashboard/connectors/llm-history',
+
   STANDALONE = '/standalone',
   STANDALONE_ROLE = '/standalone/role/:role_id',
   // STANDALONE_ROOM = '/standalone/room/:roomId',
