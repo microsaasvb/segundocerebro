@@ -52,31 +52,31 @@ export default function Home() {
   // Only render content on the client side
   if (!isMounted) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-accent" />
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-brand-deep">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-neon" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-brand-deep">
       {/* Network sphere background */}
       <NetworkSphere onInitialized={handleSphereInitialized} />
 
       {/* Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
-          className={`absolute top-20 left-20 w-64 h-64 rounded-full bg-brand-pink/10 blur-3xl delay-[400ms] transition-opacity duration-1000 ease-in-out ${contentVisible ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute top-20 left-20 w-64 h-64 rounded-full bg-brand-pink/30 blur-3xl delay-[400ms] transition-opacity duration-1000 ease-in-out ${contentVisible ? 'opacity-100' : 'opacity-0'}`}
         />
         <div
-          className={`absolute bottom-20 right-20 w-64 h-64 rounded-full bg-brand-neon/10 blur-3xl delay-[500ms] transition-opacity duration-1000 ease-in-out ${contentVisible ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute bottom-20 right-20 w-64 h-64 rounded-full bg-brand-neon/30 blur-3xl delay-[500ms] transition-opacity duration-1000 ease-in-out ${contentVisible ? 'opacity-100' : 'opacity-0'}`}
         />
         <div
-          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-brand-accent/10 blur-3xl delay-[600ms] transition-opacity duration-1000 ease-in-out ${contentVisible ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-brand-accent/30 blur-3xl delay-[600ms] transition-opacity duration-1000 ease-in-out ${contentVisible ? 'opacity-100' : 'opacity-0'}`}
         />
       </div>
 
-      <div className="relative z-10 text-center mt-[-8vh] w-full overflow-visible px-4">
+      <div className="relative z-10 text-center mt-[-8vh] w-full overflow-visible px-4 font-[var(--font-display)]">
         <div
           className={`transition-opacity duration-700 ease-in-out ${contentVisible ? 'opacity-100' : 'opacity-0'}`}
         >
@@ -87,22 +87,18 @@ export default function Home() {
               src="/images/single_logo.png"
             />
             <span
-              className="bg-gradient-to-br from-brand-deep to-brand-accent bg-clip-text text-transparent drop-shadow-sm inline-block tracking-[0.01em] font-[Calistoga]"
+              className="text-white inline-block tracking-tight"
               style={{
-                textShadow: '0 2px 4px rgba(26,11,60,0.08)'
+                textShadow: '0 0 30px rgba(0,255,148,0.2)'
               }}
             >
               Create Your AI self
             </span>
           </h1>
-          <p className="text-2xl md:text-3xl mb-14 mx-auto  px-4 flex flex-wrap justify-center tracking-[0.01em] font-[Calistoga]">
-            <span className="inline-block mx-2 bg-gradient-to-br from-brand-deep to-brand-accent bg-clip-text text-transparent">
-              Locally Trained
-            </span>
-            <span className="inline-block text-brand-pink mx-2">·</span>
-            <span className="inline-block mx-2 bg-gradient-to-br from-brand-deep to-brand-accent bg-clip-text text-transparent">
-              Globally Connected
-            </span>
+          <p className="text-2xl md:text-3xl mb-14 mx-auto px-4 flex flex-wrap justify-center tracking-tight font-medium">
+            <span className="inline-block mx-2 text-white">Locally Trained</span>
+            <span className="inline-block text-brand-neon mx-2">·</span>
+            <span className="inline-block mx-2 text-white">Globally Connected</span>
           </p>
         </div>
 
