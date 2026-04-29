@@ -5,12 +5,12 @@
 
 :root {
   --background: #fdf8f3;
-  --foreground: #2c3e50;
-  --primary: #4a90e2;
-  --primary-hover: #357abd;
-  --accent-1: #ff6b6b;
-  --accent-2: #50b86b;
-  --accent-3: #ffd93d;
+  --foreground: #1a0b3c;
+  --primary: #7a1fe0;
+  --primary-hover: #5d18ad;
+  --accent-1: #ff3da0;
+  --accent-2: #00ff94;
+  --accent-3: #7a1fe0;
   --btn-width: 240px;
 }
 
@@ -47,9 +47,9 @@
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-3 text-base font-medium text-white bg-secondme-blue rounded-xl
-           hover:bg-[#357ABD] transition-all duration-200 ease-out
-           hover:-translate-y-0.5 hover:shadow-[4px_4px_10px_0px_rgba(74,144,226,0.3)]
+    @apply px-6 py-3 text-base font-medium text-white bg-brand-accent rounded-xl
+           hover:bg-brand-deep transition-all duration-200 ease-out
+           hover:-translate-y-0.5 hover:shadow-[0_0_20px_0px_rgba(122,31,224,0.4)]
            active:translate-y-0 active:shadow-none;
 
     width: var(--btn-width);

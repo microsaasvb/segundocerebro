@@ -11,13 +11,20 @@ export default {
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
+        brand: {
+          deep: '#1A0B3C',     // roxo profundo
+          accent: '#7A1FE0',   // roxo accent
+          neon: '#00FF94',     // verde-neon
+          pink: '#FF3DA0',     // pink sinapse
+          white: '#FFFFFF'
+        },
         secondme: {
           'warm-bg': '#FDF8F3',
-          blue: '#4A90E2',
-          green: '#50B86B',
-          red: '#FF6B6B',
+          blue: '#7A1FE0',
+          green: '#00FF94',
+          red: '#FF3DA0',
           yellow: '#FFD93D',
-          navy: '#2C3E50',
+          navy: '#1A0B3C',
           gray: {
             100: '#F7F9FA',
             200: '#E9ECEF',
