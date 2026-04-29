@@ -3,6 +3,7 @@ import './globals.css';
 import { Suspense } from 'react';
 import { Analytics } from '@vercel/analytics/next';
 import { Space_Grotesk } from 'next/font/google';
+import { AntdRegistry } from '@ant-design/nextjs-registry';
 import HeaderLayout from '@/layouts/HeaderLayout';
 
 const spaceGrotesk = Space_Grotesk({
@@ -27,9 +28,11 @@ export default function RootLayout({
   return (
     <html className={`h-full ${spaceGrotesk.variable}`} lang="en">
       <body className="flex flex-col font-sans antialiased h-full">
-        <Suspense>
-          <HeaderLayout>{children}</HeaderLayout>
-        </Suspense>
+        <AntdRegistry>
+          <Suspense>
+            <HeaderLayout>{children}</HeaderLayout>
+          </Suspense>
+        </AntdRegistry>
         <Analytics />
       </body>
     </html>
